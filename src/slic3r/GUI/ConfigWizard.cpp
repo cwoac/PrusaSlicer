@@ -408,12 +408,15 @@ PageCustom::PageCustom(ConfigWizard *parent)
 		    1, wxRA_SPECIFY_COLS);
     rb_custom_tech->Enable(false);
 
-    cb_custom->Bind(wxEVT_CHECKBOX, [this](wxCommandEvent &event) {
+		auto handle_click = [this](wxCommandEvent &event) {
         tc_profile_name->Enable(custom_wanted());
-	rb_custom_tech->Enable(custom_wanted());
+				rb_custom_tech->Enable(custom_wanted());
         wizard_p()->on_custom_setup(custom_wanted(), custom_tech());
-    });
+    };
 
+    cb_custom->Bind(wxEVT_CHECKBOX, handle_click);
+		rb_custom_tech->Bind(wxEVT_RADIOBOX, handle_click);
+		
     append(cb_custom);
     append(label);
     append(tc_profile_name);

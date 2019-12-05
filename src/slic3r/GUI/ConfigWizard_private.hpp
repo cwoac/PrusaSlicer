@@ -134,7 +134,7 @@ struct PageCustom: ConfigWizardPage
     PageCustom(ConfigWizard *parent);
 
     bool custom_wanted() const { return cb_custom->GetValue(); }
-    Technology custom_tech() const { return (Technology)rb_custom_tech->GetSelection(); }
+    Technology custom_tech() const { return (Technology)(rb_custom_tech->GetSelection()+1); }
     std::string profile_name() const { return into_u8(tc_profile_name->GetValue()); }
 
 private:
