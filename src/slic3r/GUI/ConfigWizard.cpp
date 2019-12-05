@@ -398,14 +398,26 @@ PageCustom::PageCustom(ConfigWizard *parent)
         evt.Skip();
     });
 
+    static const wxString printer_type[] {
+	    _(L("FFF")),
+	    _(L("SLA"))
+    };
+    rb_custom_tech = new wxRadioBox(this, wxID_ANY, _(L("Select printer technology type")),
+		    wxDefaultPosition, wxDefaultSize,
+		    WXSIZEOF(printer_type), printer_type,
+		    1, wxRA_SPECIFY_COLS);
+    rb_custom_tech->Enable(false);
+
     cb_custom->Bind(wxEVT_CHECKBOX, [this](wxCommandEvent &event) {
         tc_profile_name->Enable(custom_wanted());
-        wizard_p()->on_custom_setup(custom_wanted());
+	rb_custom_tech->Enable(custom_wanted());
+        wizard_p()->on_custom_setup(custom_wanted(), custom_tech());
     });
 
     append(cb_custom);
     append(label);
     append(tc_profile_name);
+    append(rb_custom_tech);
 }
 
 PageUpdate::PageUpdate(ConfigWizard *parent)
@@ -888,7 +900,7 @@ static const std::unordered_map<std::string, std::pair<std::string, std::string>
     { "Original Prusa i3 MK3.ini",                           std::make_pair("MK3",  "0.4") },
 }};
 
-void ConfigWizard::priv::load_pages(bool custom_setup)
+void ConfigWizard::priv::load_pages(bool custom_setup, Technology tech)
 {
     const auto former_active = index->active_item();
 
@@ -900,10 +912,21 @@ void ConfigWizard::priv::load_pages(bool custom_setup)
     index->add_page(page_custom);
 
     if (custom_setup) {
-        index->add_page(page_firmware);
-        index->add_page(page_bed);
-        index->add_page(page_diams);
-        index->add_page(page_temps);
+				switch(tech) {
+						case T_FFF:
+							index->add_page(page_firmware);
+							index->add_page(page_bed);
+							index->add_page(page_diams);
+							index->add_page(page_temps);
+							break;
+						case T_SLA:
+							index->add_page(page_firmware);
+							index->add_page(page_diams);
+							break;
+						default:
+							// IDK Do nothing?
+							break;
+				}
     }
 
     index->add_page(page_update);
@@ -1004,9 +1027,9 @@ void ConfigWizard::priv::enable_next(bool enable)
     btn_finish->Enable(enable);
 }
 
-void ConfigWizard::priv::on_custom_setup(bool custom_wanted)
+void ConfigWizard::priv::on_custom_setup(bool custom_wanted, Technology tech_wanted)
 {
-    load_pages(custom_wanted);
+    load_pages(custom_wanted, tech_wanted);
 }
 
 void ConfigWizard::priv::apply_config(AppConfig *app_config, PresetBundle *preset_bundle, const PresetUpdater *updater)
@@ -1155,10 +1178,10 @@ ConfigWizard::ConfigWizard(wxWindow *parent, RunReason reason)
 
     p->add_page(p->page_welcome = new PageWelcome(this));
 
-    p->page_fff = new PagePrinters(this, _(L("Prusa FFF Technology Printers")), "Prusa FFF", vendor_prusa, 0, PagePrinters::T_FFF);
+    p->page_fff = new PagePrinters(this, _(L("Prusa FFF Technology Printers")), "Prusa FFF", vendor_prusa, 0, T_FFF);
     p->add_page(p->page_fff);
 
-    p->page_msla = new PagePrinters(this, _(L("Prusa MSLA Technology Printers")), "Prusa MSLA", vendor_prusa, 0, PagePrinters::T_SLA);
+    p->page_msla = new PagePrinters(this, _(L("Prusa MSLA Technology Printers")), "Prusa MSLA", vendor_prusa, 0, T_SLA);
     p->add_page(p->page_msla);
 
     p->add_page(p->page_custom   = new PageCustom(this));
@@ -1169,7 +1192,7 @@ ConfigWizard::ConfigWizard(wxWindow *parent, RunReason reason)
     p->add_page(p->page_diams    = new PageDiameters(this));
     p->add_page(p->page_temps    = new PageTemperatures(this));
 
-    p->load_pages(false);
+    p->load_pages(false, T_Any);
 
     vsizer->Add(topsizer, 1, wxEXPAND | wxALL, DIALOG_MARGIN);
     vsizer->Add(hline, 0, wxEXPAND);

@@ -15,6 +15,7 @@
 #include <wx/choice.h>
 #include <wx/spinctrl.h>
 #include <wx/textctrl.h>
+#include <wx/radiobox.h>
 
 #include "libslic3r/PrintConfig.hpp"
 #include "slic3r/Utils/PresetUpdater.hpp"
@@ -26,6 +27,14 @@ namespace fs = boost::filesystem;
 
 namespace Slic3r {
 namespace GUI {
+
+// Now needed in multiple panes
+enum Technology {
+    // Bitflag equivalent of PrinterTechnology
+    T_FFF = 0x1,
+    T_SLA = 0x2,
+    T_Any = ~0,
+};
 
 enum {
     WRAP_WIDTH = 500,
@@ -109,15 +118,9 @@ struct PageWelcome: ConfigWizardPage
     bool reset_user_profile() const { return cbox_reset != nullptr ? cbox_reset->GetValue() : false; }
 };
 
+
 struct PagePrinters: ConfigWizardPage
 {
-    enum Technology {
-        // Bitflag equivalent of PrinterTechnology
-        T_FFF = 0x1,
-        T_SLA = 0x2,
-        T_Any = ~0,
-    };
-
     std::vector<PrinterPicker *> printer_pickers;
 
     PagePrinters(ConfigWizard *parent, wxString title, wxString shortname, const VendorProfile &vendor, unsigned indent, Technology technology);
@@ -131,12 +134,14 @@ struct PageCustom: ConfigWizardPage
     PageCustom(ConfigWizard *parent);
 
     bool custom_wanted() const { return cb_custom->GetValue(); }
+    Technology custom_tech() const { return (Technology)rb_custom_tech->GetSelection(); }
     std::string profile_name() const { return into_u8(tc_profile_name->GetValue()); }
 
 private:
     static const char* default_profile_name;
 
     wxCheckBox *cb_custom;
+    wxRadioBox *rb_custom_tech;
     wxTextCtrl *tc_profile_name;
     wxString profile_name_prev;
 
@@ -291,7 +296,7 @@ struct ConfigWizard::priv
 
     priv(ConfigWizard *q) : q(q) {}
 
-    void load_pages(bool custom_setup);
+    void load_pages(bool custom_setup, Technology tech_wanted);
     void init_dialog_size();
 
     bool check_first_variant() const;
@@ -299,7 +304,7 @@ struct ConfigWizard::priv
     void add_page(ConfigWizardPage *page);
     void enable_next(bool enable);
 
-    void on_custom_setup(bool custom_wanted);
+    void on_custom_setup(bool custom_wanted, Technology tech_wanted);
 
     void apply_config(AppConfig *app_config, PresetBundle *preset_bundle, const PresetUpdater *updater);
 
